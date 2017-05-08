@@ -1,52 +1,128 @@
 package com.didjit.phonebookcompany;
 
+import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+        implements ContactsFragment.ContactsFragmentListener,
+        DetailFragment.DetailFragmentListener,
+        AddEditFragment.AddEditFragmentListener {
 
-    @Override
+    public static final String CONTACT_URI = "contact_uri";
+
+    private ContactsFragment contactsFragment;
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+        if (savedInstanceState == null &&
+                findViewById(R.id.fragmentContainer) != null) {
+            contactsFragment = new ContactsFragment();
+
+            FragmentTransaction transaction =
+                    getSupportFragmentManager().beginTransaction();
+            transaction.add(R.id.fragmentContainer, contactsFragment);
+            transaction.commit();
+        } else {
+            contactsFragment =
+                    (ContactsFragment) getSupportFragmentManager().
+                            findFragmentById(R.id.contactsFragment);
+        }
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+    public void onContactSelected(Uri contactUri) {
+        if (findViewById(R.id.fragmentContainer) != null) // phone
+            displayContact(contactUri, R.id.fragmentContainer);
+        else {
+            getSupportFragmentManager().popBackStack();
+
+            displayContact(contactUri, R.id.rightPaneContainer);
+        }
     }
 
+    // display AddEditFragment to add a new contact
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+    public void onAddContact() {
+        if (findViewById(R.id.fragmentContainer) != null) // phone
+            displayAddEditFragment(R.id.fragmentContainer, null);
+        else // tablet
+            displayAddEditFragment(R.id.rightPaneContainer, null);
+    }
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+    // display a contact
+    private void displayContact(Uri contactUri, int viewID) {
+        DetailFragment detailFragment = new DetailFragment();
+
+
+        Bundle arguments = new Bundle();
+        arguments.putParcelable(CONTACT_URI, contactUri);
+        detailFragment.setArguments(arguments);
+
+
+        FragmentTransaction transaction =
+                getSupportFragmentManager().beginTransaction();
+        transaction.replace(viewID, detailFragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
+    }
+
+    // display fragment for adding a new or editing an existing contact
+    private void displayAddEditFragment(int viewID, Uri contactUri) {
+        AddEditFragment addEditFragment = new AddEditFragment();
+
+
+        if (contactUri != null) {
+            Bundle arguments = new Bundle();
+            arguments.putParcelable(CONTACT_URI, contactUri);
+            addEditFragment.setArguments(arguments);
         }
 
-        return super.onOptionsItemSelected(item);
+
+        FragmentTransaction transaction =
+                getSupportFragmentManager().beginTransaction();
+        transaction.replace(viewID, addEditFragment);
+        transaction.addToBackStack(null);
+        transaction.commit();
     }
+
+    // return to contact list when displayed contact deleted
+    @Override
+    public void onContactDeleted() {
+        getSupportFragmentManager().popBackStack();
+        contactsFragment.updateContactList();
+    }
+
+    // display the AddEditFragment to edit an existing contact
+    @Override
+    public void onEditContact(Uri contactUri) {
+        if (findViewById(R.id.fragmentContainer) != null)
+            displayAddEditFragment(R.id.fragmentContainer, contactUri);
+        else
+            displayAddEditFragment(R.id.rightPaneContainer, contactUri);
+    }
+
+    // update GUI after new contact or updated contact saved
+    @Override
+    public void onAddEditCompleted(Uri contactUri) {
+
+        getSupportFragmentManager().popBackStack();
+        contactsFragment.updateContactList();
+
+        if (findViewById(R.id.fragmentContainer) == null) {
+
+            getSupportFragmentManager().popBackStack();
+
+
+            displayContact(contactUri, R.id.rightPaneContainer);
+        }
+    }
+
+
 }
