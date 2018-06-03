@@ -7,7 +7,7 @@ The app provides convenient access to contact information that’s stored in a S
 
 on the device. The app can scroll through an alphabetical contact list; view a contact’s details by touching 
 
- a contact’s name in the contact list; add new contacts; edit or delete existing contacts.
+a contact’s name in the contact list; add new contacts; edit or delete existing contacts.
 
 Responsibilities:
 
